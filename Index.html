@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mangalam — Plot Feasibility Calculator</title>
+<style>
+  :root {
+    --navy: #0D1B2A;
+    --gold: #C9A84C;
+    --gold-light: #F0D080;
+    --cream: #F8F5EE;
+    --cream-dark: #EDE8DC;
+    --ink: #1A1A2E;
+    --muted: #6B6B80;
+    --red: #C0392B;
+    --green: #1A6B3C;
+    --green-bg: #E8F5EE;
+    --red-bg: #FDECEA;
+    --border: #D8D3C8;
+    --white: #FFFFFF;
+    --section-gap: 28px;
+    --font-display: 'Georgia', 'Times New Roman', serif;
+    --font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--cream);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 3px solid var(--gold);
+  }
+  .app-header h1 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: normal;
+    letter-spacing: 0.03em;
+  }
+  .app-header h1 span { color: var(--gold); }
+  .header-tag {
+    font-size: 11px;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+  .calc-btn {
+    background: var(--gold);
+    color: var(--navy);
+    border: none;
+    padding: 9px 24px;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.15s;
+  }
+  .calc-btn:hover { background: var(--gold-light); }
+
+  /* ===== LAYOUT ===== */
+  .app-body {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* ===== INPUTS PANEL ===== */
+  .inputs-panel {
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    position: sticky;
+    top: 60px;
+  }
+
+  .section {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .field input, .field select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: var(--font-body);
+    background: var(--cream);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--gold);
+    background: var(--white);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .field-hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  .toggle-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .toggle-opt {
+    flex: 1;
+    padding: 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    transition: all 0.15s;
+    background: var(--cream);
+  }
+  .toggle-opt.active {
+    border-color: var(--gold);
+    background: var(--navy);
+    color: var(--gold);
+  }
+
+  /* ===== OUTPUT PANEL ===== */
+  .output-panel {
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+
+  .output-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: normal;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .output-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    letter-spacing: 0.02em;
+  }
+
+  /* KPI Row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    border-top: 3px solid var(--border);
+  }
+  .kpi-card.good { border-top-color: var(--green); }
+  .kpi-card.bad  { border-top-color: var(--red); }
+  .kpi-card.gold { border-top-color: var(--gold); }
+  .kpi-value {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: normal;
+    color: var(--navy);
+    line-height: 1.1;
+  }
+  .kpi-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Verdict banner */
+  .verdict {
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .verdict.go { background: var(--green-bg); color: var(--green); border: 1.5px solid #A8D8BC; }
+  .verdict.nogo { background: var(--red-bg); color: var(--red); border: 1.5px solid #F5BCBA; }
+  .verdict.caution { background: #FFF8E8; color: #7A5500; border: 1.5px solid #F0D080; }
+
+  /* Tables */
+  .result-section { margin-bottom: 24px; }
+  .result-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table td, table th {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--cream-dark);
+  }
+  table th { font-size: 11px; color: var(--muted); font-weight: 600; text-align: left; background: var(--cream); }
+  table tr:last-child td { border-bottom: none; }
+  table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  table .bold { font-weight: 700; }
+  table .total-row td { background: var(--navy); color: var(--white); font-weight: 700; }
+  table .sub-total td { background: var(--cream-dark); font-weight: 600; }
+  table .indent td:first-child { padding-left: 24px; color: var(--muted); }
+
+  /* Compare table */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .compare-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .compare-head {
+    background: var(--navy);
+    color: var(--white);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .compare-head .share-pct { color: var(--gold); font-size: 11px; }
+  .compare-card table td { font-size: 12px; }
+  .compare-metric { padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--cream-dark); }
+  .compare-metric:last-child { border-bottom: none; }
+  .compare-metric .label { font-size: 12px; color: var(--muted); }
+  .compare-metric .val { font-weight: 700; font-size: 13px; color: var(--navy); }
+  .compare-metric .val.green { color: var(--green); }
+  .compare-metric .val.red { color: var(--red); }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { background: white; font-size: 11px; }
+    .app-header { position: static; background: var(--navy) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 12px 20px; }
+    .app-body { grid-template-columns: 1fr; }
+    .inputs-panel { display: none; }
+    .output-panel { padding: 16px 20px; }
+    .kpi-row { grid-template-columns: repeat(4, 1fr); }
+    .compare-grid { grid-template-columns: 1fr 1fr; }
+    .no-print { display: none !important; }
+    .verdict, .kpi-card, .compare-card, table th, .total-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { size: A4; margin: 10mm; }
+  }
+
+  .print-btn {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    padding: 7px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+  .print-btn:hover { border-color: var(--gold); color: var(--ink); }
+
+  .placeholder-msg {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--muted);
+  }
+  .placeholder-msg .big { font-size: 40px; margin-bottom: 12px; }
+  .placeholder-msg p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1>Mangalam <span>Feasibility</span> Calculator</h1>
+    <div class="header-tag">UDCPR — Pune / PCMC</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="print-btn no-print" onclick="window.print()">⬡ Print A4</button>
+    <button class="calc-btn no-print" onclick="calculate()">Calculate →</button>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- ========== INPUTS ========== -->
+  <div class="inputs-panel">
+
+    <div class="section">
+      <div class="section-title">Project Identity</div>
+      <div class="field-row">
+        <div class="field"><label>Project Name</label><input type="text" id="projName" value="Keystone Moshi" /></div>
+        <div class="field"><label>Authority</label>
+          <select id="authority">
+            <option value="PCMC">PCMC</option>
+            <option value="PMC">PMC</option>
+            <option value="PMRDA">PMRDA</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Zone</label>
+          <select id="zone">
+            <option value="Residential">Residential</option>
+            <option value="Mix">Mix Use</option>
+            <option value="Commercial">Commercial</option>
+          </select>
+        </div>
+        <div class="field"><label>Project Duration (Yrs)</label><input type="number" id="projDuration" value="3" step="0.5" /></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Land & Plot Details</div>
+      <div class="field-row">
+        <div class="field"><label>Gross Plot Area (Sq.Mt.)</label><input type="number" id="grossPlot" value="2773" /></div>
+        <div class="field"><label>Ready Reckoner (₹/Sq.Mt.)</label><input type="number" id="rrRate" value="11010" /></div>
+      </div>
+      <div class="field-row3">
+        <div class="field"><label>DP Road Ded. (Sq.Mt.)</label><input type="number" id="dpRoad" value="30.87" /></div>
+        <div class="field"><label>Reservation (Sq.Mt.)</label><input type="number" id="reservation" value="0" /></div>
+        <div class="field"><label>NDZ (Sq.Mt.)</label><input type="number" id="ndz" value="0" /></div>
+      </div>
+      <div class="field-row3">
+        <div class="field"><label>Amenity Space (Sq.Mt.)</label><input type="number" id="amenity" value="0" /></div>
+        <div class="field"><label>Open Space (Sq.Mt.)</label><input type="number" id="openSpace" value="274.21" /></div>
+        <div class="field"><label>Internal Road (Sq.Mt.)</label><input type="number" id="intRoad" value="0" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Road Width (m) — fronting</label>
+          <select id="roadWidth">
+            <option value="6">Below 9m</option>
+            <option value="9">9m – 12m</option>
+            <option value="12" selected>12m – 18m</option>
+            <option value="18">18m – 24m</option>
+            <option value="24">24m & above</option>
+          </select>
+        </div>
+        <div class="field"><label>Land Deal Type</label>
+          <select id="dealType">
+            <option value="outright">Outright Purchase</option>
+            <option value="jv" selected>JV / Development</option>
+          </select>
+        </div>
+      </div>
+      <div id="plotCostSection" class="field"><label>Land Purchase Cost (₹)</label><input type="number" id="landCost" value="0" /></div>
+      <div id="jvSection">
+        <div class="field-row">
+          <div class="field"><label>Non-Refundable Deposit (₹)</label><input type="number" id="nrDeposit" value="4563400" /></div>
+          <div class="field"><label>Refundable Deposit (₹)</label><input type="number" id="rDeposit" value="12000000" /></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">FSI / UDCPR Parameters</div>
+      <div class="field-row3">
+        <div class="field"><label>Basic FSI Factor</label><input type="number" id="basicFsi" value="1.10" step="0.05" /></div>
+        <div class="field"><label>Premium FSI Factor</label><input type="number" id="premFsiPct" value="0.50" step="0.05" /></div>
+        <div class="field"><label>TDR Factor</label><input type="number" id="tdrFactor" value="0.90" step="0.05" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>TDR Split — Slum %</label>
+          <select id="tdrSlumPct">
+            <option value="0.3" selected>30% Slum / 70% Regular</option>
+            <option value="0.5">50% Slum / 50% Regular</option>
+            <option value="0">100% Regular</option>
+          </select>
+        </div>
+        <div class="field"><label>TDR Rate Multiple (Regular)</label><input type="number" id="tdrRegMult" value="1.45" step="0.05" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Ancillary FSI (60% of total)</label><input type="number" id="ancillaryPct" value="0.60" step="0.05" /></div>
+        <div class="field"><label>MHADA % (0 if N/A)</label><input type="number" id="mhadaPct" value="0" step="1" /></div>
+      </div>
+      <div class="field-hint">IGBC Gold incentive FSI (5%) — tick if applicable</div>
+      <div class="field" style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+        <input type="checkbox" id="igbc" style="width:auto" />
+        <label style="margin:0;font-size:12px;color:var(--ink);">IGBC Gold / equivalent (+5% basic FSI)</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Landowner Share (Compare Both)</div>
+      <div class="field-hint" style="margin-bottom:10px;">Both 30% and 40% landowner share are auto-computed and compared in output.</div>
+      <div class="field-row">
+        <div class="field"><label>Carpet → Saleable Ratio</label><input type="number" id="saleRatio" value="1.38" step="0.01" /></div>
+        <div class="field"><label>Slab → Saleable Ratio</label><input type="number" id="slabRatio" value="1.25" step="0.01" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Resi Sale Rate (₹/sq.ft.)</label><input type="number" id="resiRate" value="5000" /></div>
+        <div class="field"><label>MHADA Rate (₹/sq.ft.)</label><input type="number" id="mhadaRate" value="3150" /></div>
+      </div>
+      <div class="field"><label>Commercial Sale Rate (₹/sq.ft.)</label><input type="number" id="commRate" value="0" /></div>
+      <div class="field-row">
+        <div class="field"><label>Commercial % of Total</label><input type="number" id="commPct" value="0" step="1" /></div>
+        <div class="field"><label>PLC Premium % (avg)</label><input type="number" id="plcPct" value="0.03" step="0.01" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Parking Revenue (₹/slot)</label><input type="number" id="parkRate" value="200000" /></div>
+        <div class="field"><label>Parking Slots (Developer)</label><input type="number" id="parkSlots" value="110" /></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Construction Cost (₹/Sq.Ft. Built-up)</div>
+      <div class="field-row">
+        <div class="field"><label>Civil / RCC</label><input type="number" id="cCivil" value="879" /></div>
+        <div class="field"><label>Blockwork & Plaster</label><input type="number" id="cBlock" value="315" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Waterproofing</label><input type="number" id="cWP" value="44" /></div>
+        <div class="field"><label>Tiling & Flooring</label><input type="number" id="cTile" value="198" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Electrical</label><input type="number" id="cElec" value="118" /></div>
+        <div class="field"><label>Plumbing</label><input type="number" id="cPlumb" value="106" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Fire Fighting</label><input type="number" id="cFire" value="27" /></div>
+        <div class="field"><label>Lift</label><input type="number" id="cLift" value="42" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Aluminium Windows</label><input type="number" id="cWin" value="53" /></div>
+        <div class="field"><label>Doors & Frames</label><input type="number" id="cDoor" value="75" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Painting</label><input type="number" id="cPaint" value="92" /></div>
+        <div class="field"><label>External / Misc</label><input type="number" id="cExt" value="62" /></div>
+      </div>
+      <div class="field"><label>Infrastructure (₹/sq.ft. sale)</label><input type="number" id="cInfra" value="250" /></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Statutory & Sanction Costs</div>
+      <div class="field-row">
+        <div class="field"><label>Fire NOC (₹)</label><input type="number" id="sFireNoc" value="15000000" /></div>
+        <div class="field"><label>Garden NOC (₹)</label><input type="number" id="sGarden" value="3480000" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Water NOC (₹)</label><input type="number" id="sWater" value="1800000" /></div>
+        <div class="field"><label>Drainage NOC (₹)</label><input type="number" id="sDrain" value="1800000" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>C&D NOC (₹)</label><label></label><input type="number" id="sCnD" value="500000" /></div>
+        <div class="field"><label>EC Clearance (₹)</label><input type="number" id="sEC" value="5000000" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>RERA Fees (₹)</label><input type="number" id="sRERA" value="100000" /></div>
+        <div class="field"><label>Legal / Stamp (₹)</label><input type="number" id="sLegal" value="5554200" /></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Overheads & Finance</div>
+      <div class="field-row">
+        <div class="field"><label>Sales & Marketing (₹/sq.ft.)</label><input type="number" id="oSales" value="200" /></div>
+        <div class="field"><label>Brokerage % of Revenue</label><input type="number" id="oBrok" value="0.02" step="0.005" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>HR & Admin (₹/sq.ft.)</label><input type="number" id="oHR" value="50" /></div>
+        <div class="field"><label>Consultant Fees (₹/sq.ft.)</label><input type="number" id="oConsult" value="70" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Site Running (₹/sq.ft.)</label><input type="number" id="oSite" value="50" /></div>
+        <div class="field"><label>Assets / Tech (₹/sq.ft.)</label><input type="number" id="oAssets" value="5" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Finance / Interest (₹/sq.ft.)</label><input type="number" id="oFin" value="5" /></div>
+        <div class="field"><label>Contingency %</label><input type="number" id="oCont" value="5" step="1" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Tax Rate (effective %)</label><input type="number" id="taxRate" value="33" step="1" /></div>
+        <div class="field"><label>Equity Investment (₹)</label><input type="number" id="equity" value="30000000" /></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== OUTPUT ========== -->
+  <div class="output-panel" id="outputPanel">
+    <div class="placeholder-msg" id="placeholderMsg">
+      <div class="big">📐</div>
+      <p>Fill inputs on the left and click <strong>Calculate</strong> to generate the full feasibility report.</p>
+    </div>
+    <div id="outputContent" style="display:none;"></div>
+  </div>
+
+</div>
+
+<script>
+  // Deal type toggle
+  document.getElementById('dealType').addEventListener('change', function(){
+    const isJV = this.value === 'jv';
+    document.getElementById('plotCostSection').style.display = isJV ? 'none' : 'block';
+    document.getElementById('jvSection').style.display = isJV ? 'block' : 'none';
+  });
+  // init
+  document.getElementById('plotCostSection').style.display = 'none';
+
+  function v(id){ return parseFloat(document.getElementById(id).value)||0; }
+  function s(id){ return document.getElementById(id).value; }
+
+  function fmt(n, decimals=0){
+    if(Math.abs(n)>=10000000) return '₹'+(n/10000000).toFixed(2)+' Cr';
+    if(Math.abs(n)>=100000) return '₹'+(n/100000).toFixed(2)+' L';
+    return '₹'+n.toLocaleString('en-IN',{maximumFractionDigits:decimals});
+  }
+  function fmtNum(n, d=0){ return n.toLocaleString('en-IN',{maximumFractionDigits:d}); }
+  function pct(n){ return (n*100).toFixed(1)+'%'; }
+  function pctStr(n){ return n.toFixed(1)+'%'; }
+
+  function calcFeasibility(landSharePct) {
+    // ---- PLOT & NET AREA ----
+    const gross = v('grossPlot');
+    const dpDed = v('dpRoad');
+    const resDed = v('reservation');
+    const ndzDed = v('ndz');
+    const balance = gross - dpDed - resDed - ndzDed;
+    const amenityDed = v('amenity');
+    const openDed = v('openSpace');
+    const intRoadDed = v('intRoad');
+    const netPlot = balance; // UDCPR: net balance after step 3
+
+    // ---- FSI ----
+    const basicFsiF = v('basicFsi');
+    const premFsiF = v('premFsiPct');
+    const tdrF = v('tdrFactor');
+    const ancillaryPct = v('ancillaryPct');
+    const mhadaPct = v('mhadaPct')/100;
+    const igbcBonus = document.getElementById('igbc').checked ? 0.05 : 0;
+
+    const basicFsiArea = netPlot * (basicFsiF + igbcBonus);
+    const dpRoadFsi = 2 * dpDed;
+    const premFsiArea = netPlot * premFsiF;
+    const tdrArea = netPlot * tdrF;
+    const totalFsi = basicFsiArea + dpRoadFsi + premFsiArea + tdrArea;
+    const ancillaryFsi = totalFsi * ancillaryPct;
+    const totalWithAncillary = totalFsi + ancillaryFsi;
+    const mhadaArea = totalFsi * mhadaPct;
+    const devFsi = totalWithAncillary - mhadaArea;
+
+    // ---- SALEABLE AREA ----
+    const saleRatio = v('saleRatio');
+    const slabRatio = v('slabRatio');
+    const totalSaleable = devFsi * 10.764 * saleRatio; // Sq.Mt. → Sq.Ft. via carpet → sale ratio
+    const commPct = v('commPct')/100;
+    const commSaleable = totalSaleable * commPct;
+    const resiTotal = totalSaleable - commSaleable;
+    const mhadaSaleable = mhadaArea * 10.764 * saleRatio;
+    const loShare = resiTotal * landSharePct;
+    const devResiSale = resiTotal - loShare - mhadaSaleable;
+    const devTotalSale = devResiSale + commSaleable;
+    const slabArea = totalSaleable * slabRatio;
+
+    // ---- REVENUE ----
+    const rrRate = v('rrRate');
+    const resiRate = v('resiRate');
+    const commRate = v('commRate');
+    const mhadaRate = v('mhadaRate');
+    const plcPct = v('plcPct');
+    const parkRev = v('parkRate') * v('parkSlots');
+
+    const resiRev = devResiSale * resiRate * (1 + plcPct);
+    const commRev = commSaleable * commRate;
+    const mhadaRev = mhadaSaleable * mhadaRate;
+    const totalRevenue = resiRev + commRev + mhadaRev + parkRev;
+
+    // ---- CONSTRUCTION COST ----
+    const conRates = {
+      civil: v('cCivil'), block: v('cBlock'), wp: v('cWP'), tile: v('cTile'),
+      elec: v('cElec'), plumb: v('cPlumb'), fire: v('cFire'), lift: v('cLift'),
+      win: v('cWin'), door: v('cDoor'), paint: v('cPaint'), ext: v('cExt')
+    };
+    const baseConRate = Object.values(conRates).reduce((a,b)=>a+b,0);
+    const contCon = baseConRate * 0.02;
+    const totalConRate = baseConRate + contCon;
+    const constructionCost = slabArea * totalConRate;
+    const infraCost = totalSaleable * v('cInfra');
+
+    // ---- STATUTORY COSTS ----
+    // Dev charges: plot DC (1% RR) + resi (4% RR) + comm (8% RR)
+    const dcPlot = netPlot * rrRate * 0.01;
+    const dcResi = devFsi * rrRate * 0.04;
+    const dcComm = devFsi * commPct * rrRate * 0.08;
+    const devCharges = dcPlot + dcResi + dcComm;
+
+    // Premium FSI charges: area × RR × 10% (basic→1.1) + area × RR × 35% (paid)
+    const premBasicCharge = (basicFsiArea + ancillaryFsi) * rrRate * 0.10;
+    const premPaidCharge = premFsiArea * rrRate * 0.35;
+    const premiumCharges = premBasicCharge + premPaidCharge;
+
+    // Upkar (cess): total FSI × upkar rate
+    const upkarRate = 266.2; // PCMC standard
+    const upkar = devFsi * upkarRate;
+
+    // TDR cost: slum 30% + regular 70% of RR
+    const slumPct = v('tdrSlumPct');
+    const regMult = v('tdrRegMult');
+    const tdrSlumArea = tdrArea * slumPct;
+    const tdrRegArea = tdrArea * (1 - slumPct);
+    const tdrSlumCost = tdrSlumArea * rrRate;
+    const tdrRegCost = tdrRegArea * rrRate * regMult;
+    const tdrStamp = (tdrSlumCost + tdrRegCost) * 0.04;
+    const tdrLoading = 75000;
+    const tdrTotalCost = tdrSlumCost + tdrRegCost + tdrStamp + tdrLoading;
+
+    // Fire premium
+    const firePrem = devFsi * 10.764 * 2.7; // approx ₹2.7/sq.ft
+    
+    // NOCs
+    const nocCosts = v('sFireNoc') + v('sGarden') + v('sWater') + v('sDrain') + v('sCnD') + v('sEC') + v('sRERA') + v('sLegal');
+    const totalStatutory = devCharges + premiumCharges + upkar + tdrTotalCost + firePrem + nocCosts;
+
+    // ---- LAND COST ----
+    let landCostTotal = 0;
+    if(s('dealType') === 'outright'){
+      landCostTotal = v('landCost');
+    } else {
+      landCostTotal = v('nrDeposit') + v('rDeposit'); // refundable returned; include both for cost
+    }
+
+    // ---- OVERHEADS ----
+    const brokCost = totalRevenue * v('oBrok');
+    const salesMktCost = devTotalSale * v('oSales');
+    const hrCost = devTotalSale * v('oHR');
+    const consultCost = devTotalSale * v('oConsult');
+    const siteCost = devTotalSale * v('oSite');
+    const assetsCost = devTotalSale * v('oAssets');
+    const finCost = devTotalSale * v('oFin');
+    const subOH = salesMktCost + brokCost + hrCost + consultCost + siteCost + assetsCost + finCost;
+    const contAmt = subOH * (v('oCont')/100);
+    const totalOH = subOH + contAmt;
+
+    // ---- TOTAL COST ----
+    const totalCost = constructionCost + infraCost + totalStatutory + landCostTotal + totalOH;
+
+    // ---- PROFIT ----
+    const grossProfit = totalRevenue - totalCost;
+    const taxAmt = grossProfit > 0 ? grossProfit * (v('taxRate')/100) : 0;
+    const pat = grossProfit - taxAmt;
+    const grossMargin = totalRevenue > 0 ? grossProfit / totalRevenue : 0;
+    const patMargin = totalRevenue > 0 ? pat / totalRevenue : 0;
+    const dur = v('projDuration');
+    const patPerYear = dur > 0 ? pat / dur : pat;
+    const equity = v('equity');
+    const roi = equity > 0 ? (pat / equity) * 100 : 0;
+    const roiPerYear = dur > 0 ? roi / dur : roi;
+    const cpsf = devTotalSale > 0 ? totalCost / devTotalSale : 0;
+    const rpsf = devTotalSale > 0 ? totalRevenue / devTotalSale : 0;
+    const ppsf = devTotalSale > 0 ? pat / devTotalSale : 0;
+
+    return {
+      gross, netPlot, balance, dpDed, resDed, ndzDed, amenityDed, openDed,
+      basicFsiArea, dpRoadFsi, premFsiArea, tdrArea, totalFsi, ancillaryFsi, totalWithAncillary, mhadaArea, devFsi,
+      totalSaleable, commSaleable, resiTotal, mhadaSaleable, loShare, devResiSale, devTotalSale, slabArea,
+      totalRevenue, resiRev, commRev, mhadaRev, parkRev,
+      constructionCost, infraCost, totalStatutory, devCharges, premiumCharges, upkar, tdrTotalCost, nocCosts, firePrem, landCostTotal,
+      baseConRate, totalConRate, tdrSlumArea, tdrRegArea, tdrSlumCost, tdrRegCost, tdrStamp,
+      totalOH, salesMktCost, brokCost, hrCost, consultCost, siteCost, assetsCost, finCost, contAmt,
+      totalCost, grossProfit, taxAmt, pat, grossMargin, patMargin, patPerYear, roi, roiPerYear,
+      cpsf, rpsf, ppsf, equity
+    };
+  }
+
+  function calculate(){
+    const r30 = calcFeasibility(0.30);
+    const r40 = calcFeasibility(0.40);
+    const proj = s('projName');
+    const auth = s('authority');
+    const r = r30; // use 30% as primary display
+
+    document.getElementById('placeholderMsg').style.display = 'none';
+    document.getElementById('outputContent').style.display = 'block';
+
+    // Verdict
+    let verdictClass = 'go', verdictText = '✅ GO — Project meets profitability thresholds';
+    if(r.patMargin < 0.10 || r.roi < 30){
+      verdictClass = 'nogo'; verdictText = '🔴 NO-GO — Returns below minimum threshold (PAT Margin < 10% or ROI < 30%)';
+    } else if(r.patMargin < 0.15 || r.roi < 50){
+      verdictClass = 'caution'; verdictText = '⚠️ CAUTION — Acceptable but tight. Review cost assumptions.';
+    }
+
+    const html = `
+    <div class="output-title">${proj}</div>
+    <div class="output-subtitle">${auth} | UDCPR Feasibility Report | ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+
+    <div class="verdict ${verdictClass}">${verdictText}</div>
+
+    <div class="kpi-row">
+      <div class="kpi-card gold">
+        <div class="kpi-value">${fmt(r.totalRevenue)}</div>
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-sub">${fmtNum(r.devTotalSale,0)} sq.ft. @ ₹${fmtNum(v('resiRate'))}</div>
+      </div>
+      <div class="kpi-card ${r.patMargin>=0.15?'good':'bad'}">
+        <div class="kpi-value">${pct(r.patMargin)}</div>
+        <div class="kpi-label">PAT Margin</div>
+        <div class="kpi-sub">${fmt(r.pat)} net profit</div>
+      </div>
+      <div class="kpi-card ${r.roi>=50?'good':'bad'}">
+        <div class="kpi-value">${pctStr(r.roi)}%</div>
+        <div class="kpi-label">ROI on Equity</div>
+        <div class="kpi-sub">${pctStr(r.roiPerYear)}% per year</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-value">${fmt(r.devFsi * 10.764 * v('saleRatio'),0)}</div>
+        <div class="kpi-label">Total Saleable (sq.ft.)</div>
+        <div class="kpi-sub">Developer: ${fmtNum(r.devTotalSale,0)} sq.ft.</div>
+      </div>
+    </div>
+
+    <!-- LANDOWNER COMPARISON -->
+    <div class="result-section-title">Landowner Share Comparison</div>
+    <div class="compare-grid">
+      ${renderCompare(r30, '30%')}
+      ${renderCompare(r40, '40%')}
+    </div>
+
+    <!-- AREA STATEMENT -->
+    <div class="result-section">
+      <div class="result-section-title">A. Area Statement (UDCPR)</div>
+      <table>
+        <thead><tr><th>#</th><th>Description</th><th class="num">Sq.Mt.</th><th class="num">Sq.Ft.</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Gross Plot Area</td><td class="num">${fmtNum(r.gross)}</td><td class="num">${fmtNum(r.gross*10.764)}</td></tr>
+          <tr class="indent"><td></td><td>DP Road Deduction</td><td class="num">(${fmtNum(v('dpRoad'))})</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>Reservation / NDZ</td><td class="num">(${fmtNum(v('reservation')+v('ndz'))})</td><td class="num"></td></tr>
+          <tr class="sub-total"><td>2</td><td>Net Plot Area (for FSI)</td><td class="num bold">${fmtNum(r.netPlot)}</td><td class="num bold">${fmtNum(r.netPlot*10.764)}</td></tr>
+          <tr><td>3</td><td>Basic FSI (×${v('basicFsi')})</td><td class="num">${fmtNum(r.basicFsiArea)}</td><td class="num"></td></tr>
+          <tr><td>4</td><td>DP Road FSI (2× deduction)</td><td class="num">${fmtNum(r.dpRoadFsi)}</td><td class="num"></td></tr>
+          <tr><td>5</td><td>Premium FSI (×${v('premFsiPct')})</td><td class="num">${fmtNum(r.premFsiArea)}</td><td class="num"></td></tr>
+          <tr><td>6</td><td>TDR (×${v('tdrFactor')})</td><td class="num">${fmtNum(r.tdrArea)}</td><td class="num"></td></tr>
+          <tr class="sub-total"><td>7</td><td>Total Permissible FSI</td><td class="num bold">${fmtNum(r.totalFsi)}</td><td class="num bold"></td></tr>
+          <tr><td>8</td><td>Ancillary FSI (${v('ancillaryPct')*100}%)</td><td class="num">${fmtNum(r.ancillaryFsi)}</td><td class="num"></td></tr>
+          <tr><td>9</td><td>MHADA Area</td><td class="num">${fmtNum(r.mhadaArea)}</td><td class="num"></td></tr>
+          <tr class="total-row"><td>10</td><td>Net Developer FSI</td><td class="num">${fmtNum(r.devFsi)}</td><td class="num">${fmtNum(r.devFsi*10.764)}</td></tr>
+          <tr><td>11</td><td>Total Saleable (×${v('saleRatio')} ratio)</td><td class="num"></td><td class="num bold">${fmtNum(r.totalSaleable,0)}</td></tr>
+          <tr><td>12</td><td>Landowner Share (30%)</td><td class="num"></td><td class="num">(${fmtNum(r30.loShare,0)})</td></tr>
+          <tr class="sub-total"><td>13</td><td>Developer Net Sale Area</td><td class="num"></td><td class="num bold">${fmtNum(r.devTotalSale,0)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- REVENUE -->
+    <div class="result-section">
+      <div class="result-section-title">B. Revenue Model (at 30% LO Share)</div>
+      <table>
+        <thead><tr><th>Head</th><th class="num">Area (sq.ft.)</th><th class="num">Rate (₹)</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>Residential (Developer)</td><td class="num">${fmtNum(r.devResiSale,0)}</td><td class="num">₹${fmtNum(v('resiRate'))} + ${(v('plcPct')*100).toFixed(0)}% PLC</td><td class="num">${fmt(r.resiRev)}</td></tr>
+          ${r.mhadaSaleable>0?`<tr><td>MHADA Component</td><td class="num">${fmtNum(r.mhadaSaleable,0)}</td><td class="num">₹${fmtNum(v('mhadaRate'))}</td><td class="num">${fmt(r.mhadaRev)}</td></tr>`:''}
+          ${r.commSaleable>0?`<tr><td>Commercial</td><td class="num">${fmtNum(r.commSaleable,0)}</td><td class="num">₹${fmtNum(v('commRate'))}</td><td class="num">${fmt(r.commRev)}</td></tr>`:''}
+          <tr><td>Parking Revenue</td><td class="num">${fmtNum(v('parkSlots'))} slots</td><td class="num">₹${fmtNum(v('parkRate'))}/slot</td><td class="num">${fmt(r.parkRev)}</td></tr>
+          <tr class="total-row"><td class="bold">Total Revenue</td><td class="num"></td><td class="num"></td><td class="num bold">${fmt(r.totalRevenue)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- COST -->
+    <div class="result-section">
+      <div class="result-section-title">C. Cost Model (at 30% LO Share)</div>
+      <table>
+        <thead><tr><th>#</th><th>Cost Head</th><th class="num">Rate</th><th class="num">Amount</th><th class="num">% Total</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Construction (Civil + MEP)</td><td class="num">₹${fmtNum(r.totalConRate,0)}/sq.ft. BUA</td><td class="num">${fmt(r.constructionCost)}</td><td class="num">${pct(r.constructionCost/r.totalCost)}</td></tr>
+          <tr><td>2</td><td>Infrastructure / Development</td><td class="num">₹${fmtNum(v('cInfra'))}/sq.ft.</td><td class="num">${fmt(r.infraCost)}</td><td class="num">${pct(r.infraCost/r.totalCost)}</td></tr>
+          <tr><td>3</td><td>Statutory — Dev Charges</td><td class="num">RR × 1/4/8%</td><td class="num">${fmt(r.devCharges)}</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>Premium FSI Charges</td><td class="num">RR × 10/35%</td><td class="num">${fmt(r.premiumCharges)}</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>TDR Purchase + Stamp</td><td class="num">Slum+Reg+4% SD</td><td class="num">${fmt(r.tdrTotalCost)}</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>Upkar (Cess)</td><td class="num">₹${fmtNum(v('rrRate')>0?266.2:0)}/Sq.Mt.</td><td class="num">${fmt(r.upkar)}</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>NOCs (Fire/Garden/Water/EC…)</td><td class="num">Lumpsum</td><td class="num">${fmt(r.nocCosts)}</td><td class="num"></td></tr>
+          <tr class="sub-total"><td></td><td>Total Statutory</td><td></td><td class="num bold">${fmt(r.totalStatutory)}</td><td class="num">${pct(r.totalStatutory/r.totalCost)}</td></tr>
+          <tr><td>4</td><td>Land / JV Deposit</td><td></td><td class="num">${fmt(r.landCostTotal)}</td><td class="num">${pct(r.landCostTotal/r.totalCost)}</td></tr>
+          <tr><td>5</td><td>Sales & Marketing + Brokerage</td><td class="num">₹${fmtNum(v('oSales'))}+${(v('oBrok')*100).toFixed(1)}%</td><td class="num">${fmt(r.salesMktCost+r.brokCost)}</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>HR + Consultants + Site Running</td><td></td><td class="num">${fmt(r.hrCost+r.consultCost+r.siteCost)}</td><td class="num"></td></tr>
+          <tr class="indent"><td></td><td>Finance + Assets + Contingency</td><td></td><td class="num">${fmt(r.finCost+r.assetsCost+r.contAmt)}</td><td class="num"></td></tr>
+          <tr class="sub-total"><td></td><td>Total Overheads</td><td></td><td class="num bold">${fmt(r.totalOH)}</td><td class="num">${pct(r.totalOH/r.totalCost)}</td></tr>
+          <tr class="total-row"><td colspan="3">Total Project Cost</td><td class="num bold">${fmt(r.totalCost)}</td><td class="num">${fmtNum(r.cpsf,0)} ₹/sf</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TDR BREAKOUT -->
+    <div class="result-section">
+      <div class="result-section-title">D. TDR Calculation Breakout</div>
+      <table>
+        <tbody>
+          <tr><td>TDR Total Area</td><td class="num">${fmtNum(r.tdrArea,2)} Sq.Mt.</td></tr>
+          <tr><td>Slum TDR (${(v('tdrSlumPct')*100).toFixed(0)}%) @ RR rate</td><td class="num">${fmt(r.tdrSlumCost)}</td></tr>
+          <tr><td>Regular TDR (${(100-v('tdrSlumPct')*100).toFixed(0)}%) @ ${v('tdrRegMult')}× RR</td><td class="num">${fmt(r.tdrRegCost)}</td></tr>
+          <tr><td>Stamp Duty @ 4%</td><td class="num">${fmt(r.tdrStamp)}</td></tr>
+          <tr><td>TDR Loading Charges</td><td class="num">₹75,000</td></tr>
+          <tr class="sub-total"><td>Total TDR Cost</td><td class="num bold">${fmt(r.tdrTotalCost)}</td></tr>
+          <tr><td>TDR cost per sq.ft. (saleable)</td><td class="num">₹${fmtNum(r.tdrTotalCost/r.devTotalSale, 1)}/sq.ft.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PROFITABILITY -->
+    <div class="result-section">
+      <div class="result-section-title">E. Profitability Summary (at 30% LO Share)</div>
+      <table>
+        <tbody>
+          <tr><td>Gross Revenue</td><td class="num bold">${fmt(r.totalRevenue)}</td><td class="num">${fmtNum(r.rpsf,0)} ₹/sq.ft.</td></tr>
+          <tr><td>Total Project Cost</td><td class="num">${fmt(r.totalCost)}</td><td class="num">${fmtNum(r.cpsf,0)} ₹/sq.ft.</td></tr>
+          <tr class="sub-total"><td>Gross Profit</td><td class="num bold">${fmt(r.grossProfit)}</td><td class="num">${pct(r.grossMargin)}</td></tr>
+          <tr><td>Income Tax (${v('taxRate')}%)</td><td class="num">(${fmt(r.taxAmt)})</td><td class="num"></td></tr>
+          <tr class="total-row"><td>PAT (Net Profit)</td><td class="num bold">${fmt(r.pat)}</td><td class="num">${pct(r.patMargin)}</td></tr>
+          <tr><td>PAT per Year (${v('projDuration')} yrs)</td><td class="num">${fmt(r.patPerYear)}</td><td class="num"></td></tr>
+          <tr><td>Equity Invested</td><td class="num">${fmt(r.equity)}</td><td class="num"></td></tr>
+          <tr><td>ROI on Equity</td><td class="num bold">${pctStr(r.roi)}%</td><td class="num">${pctStr(r.roiPerYear)}%/yr</td></tr>
+          <tr><td>Profit per sq.ft. (developer sale)</td><td class="num">${fmtNum(r.ppsf,0)} ₹/sq.ft.</td><td class="num"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="font-size:10px;color:var(--muted);margin-top:16px;border-top:1px solid var(--border);padding-top:10px;">
+      Generated by Mangalam Landmarks — Feasibility Calculator | UDCPR Pune/PCMC | ${new Date().toLocaleString('en-IN')} | All amounts in ₹. TDR rates are indicative; verify with current RR notification.
+    </div>
+    `;
+
+    document.getElementById('outputContent').innerHTML = html;
+  }
+
+  function renderCompare(r, label){
+    const roi = r.roiPerYear;
+    const margin = r.patMargin;
+    const good = roi >= 15 && margin >= 0.12;
+    const head = good ? '#1A6B3C' : '#C0392B';
+    return `
+    <div class="compare-card">
+      <div class="compare-head" style="background:${head}">
+        <span>LO Share: ${label}</span>
+        <span class="share-pct">Dev: ${label==='30%'?'70%':'60%'} | ${fmtNum(r.devTotalSale,0)} sq.ft.</span>
+      </div>
+      <div class="compare-metric"><span class="label">Total Revenue</span><span class="val">${fmt(r.totalRevenue)}</span></div>
+      <div class="compare-metric"><span class="label">Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
+      <div class="compare-metric"><span class="label">PAT</span><span class="val ${r.pat>0?'green':'red'}">${fmt(r.pat)}</span></div>
+      <div class="compare-metric"><span class="label">PAT Margin</span><span class="val ${margin>=0.15?'green':'red'}">${pct(margin)}</span></div>
+      <div class="compare-metric"><span class="label">ROI (Total)</span><span class="val ${r.roi>=50?'green':'red'}">${pctStr(r.roi)}%</span></div>
+      <div class="compare-metric"><span class="label">ROI / Year</span><span class="val ${roi>=15?'green':'red'}">${pctStr(roi)}%/yr</span></div>
+      <div class="compare-metric"><span class="label">Profit / sq.ft.</span><span class="val">₹${fmtNum(r.ppsf,0)}</span></div>
+      <div class="compare-metric"><span class="label">Cost / sq.ft.</span><span class="val">₹${fmtNum(r.cpsf,0)}</span></div>
+      <div class="compare-metric" style="background:${good?'#E8F5EE':'#FDECEA'}">
+        <span class="label" style="font-weight:700">${good?'✅ Viable':'🔴 Review'}</span>
+        <span class="val ${good?'green':'red'}">${good?'GO':'CAUTION'}</span>
+      </div>
+    </div>`;
+  }
+
+  // Auto-calculate on load
+  window.addEventListener('load', calculate);
+</script>
+</body>
+</html>
