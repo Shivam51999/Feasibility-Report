@@ -452,8 +452,13 @@
     </div>
 
     <div class="section">
-      <div class="section-title">Landowner Share (Compare Both)</div>
-      <div class="field-hint" style="margin-bottom:10px;">Both 30% and 40% landowner share are auto-computed and compared in output.</div>
+      <div class="section-title">Landowner Share (Compare Up to 3)</div>
+      <div class="field-hint" style="margin-bottom:10px;">Enter up to 3 LO share % to compare side-by-side in output. Leave Scenario 3 blank to compare only two.</div>
+      <div class="field-row3">
+        <div class="field"><label>Scenario 1 LO Share %</label><input type="number" id="lo1" value="30" step="1" min="1" max="99" /></div>
+        <div class="field"><label>Scenario 2 LO Share %</label><input type="number" id="lo2" value="40" step="1" min="1" max="99" /></div>
+        <div class="field"><label>Scenario 3 LO Share % (opt.)</label><input type="number" id="lo3" value="" step="1" min="1" max="99" placeholder="e.g. 50" /></div>
+      </div>
       <div class="field-row">
         <div class="field"><label>Carpet → Saleable Ratio</label><input type="number" id="saleRatio" value="1.38" step="0.01" /></div>
         <div class="field"><label>Slab → Saleable Ratio</label><input type="number" id="slabRatio" value="1.25" step="0.01" /></div>
@@ -735,11 +740,16 @@
   }
 
   function calculate(){
-    const r30 = calcFeasibility(0.30);
-    const r40 = calcFeasibility(0.40);
+    const lo1 = (parseFloat(document.getElementById('lo1').value)||30)/100;
+    const lo2 = (parseFloat(document.getElementById('lo2').value)||40)/100;
+    const lo3raw = document.getElementById('lo3').value;
+    const lo3 = lo3raw !== '' ? parseFloat(lo3raw)/100 : null;
+    const r30 = calcFeasibility(lo1);
+    const r40 = calcFeasibility(lo2);
+    const r50 = lo3 !== null ? calcFeasibility(lo3) : null;
     const proj = s('projName');
     const auth = s('authority');
-    const r = r30; // use 30% as primary display
+    const r = r30; // use scenario 1 as primary display
 
     document.getElementById('placeholderMsg').style.display = 'none';
     document.getElementById('outputContent').style.display = 'block';
@@ -783,9 +793,10 @@
 
     <!-- LANDOWNER COMPARISON -->
     <div class="result-section-title">Landowner Share Comparison</div>
-    <div class="compare-grid">
-      ${renderCompare(r30, '30%')}
-      ${renderCompare(r40, '40%')}
+    <div class="compare-grid" style="grid-template-columns: repeat(${r50!==null?3:2}, 1fr)">
+      ${renderCompare(r30, lo1*100+'%')}
+      ${renderCompare(r40, lo2*100+'%')}
+      ${r50!==null ? renderCompare(r50, lo3*100+'%') : ''}
     </div>
 
     <!-- AREA STATEMENT -->
@@ -815,7 +826,7 @@
 
     <!-- REVENUE -->
     <div class="result-section">
-      <div class="result-section-title">B. Revenue Model (at 30% LO Share)</div>
+      <div class="result-section-title">B. Revenue Model (at Scenario 1: ${lo1*100}% LO Share)</div>
       <table>
         <thead><tr><th>Head</th><th class="num">Area (sq.ft.)</th><th class="num">Rate (₹)</th><th class="num">Amount</th></tr></thead>
         <tbody>
@@ -830,7 +841,7 @@
 
     <!-- COST -->
     <div class="result-section">
-      <div class="result-section-title">C. Cost Model (at 30% LO Share)</div>
+      <div class="result-section-title">C. Cost Model (at Scenario 1: ${lo1*100}% LO Share)</div>
       <table>
         <thead><tr><th>#</th><th>Cost Head</th><th class="num">Rate</th><th class="num">Amount</th><th class="num">% Total</th></tr></thead>
         <tbody>
@@ -870,7 +881,7 @@
 
     <!-- PROFITABILITY -->
     <div class="result-section">
-      <div class="result-section-title">E. Profitability Summary (at 30% LO Share)</div>
+      <div class="result-section-title">E. Profitability Summary (at Scenario 1: ${lo1*100}% LO Share)</div>
       <table>
         <tbody>
           <tr><td>Gross Revenue</td><td class="num bold">${fmt(r.totalRevenue)}</td><td class="num">${fmtNum(r.rpsf,0)} ₹/sq.ft.</td></tr>
@@ -899,11 +910,13 @@
     const margin = r.patMargin;
     const good = roi >= 15 && margin >= 0.12;
     const head = good ? '#1A6B3C' : '#C0392B';
+    const loPct = parseFloat(label);
+    const devPct = (100 - loPct).toFixed(0) + '%';
     return `
     <div class="compare-card">
       <div class="compare-head" style="background:${head}">
         <span>LO Share: ${label}</span>
-        <span class="share-pct">Dev: ${label==='30%'?'70%':'60%'} | ${fmtNum(r.devTotalSale,0)} sq.ft.</span>
+        <span class="share-pct">Dev: ${devPct} | ${fmtNum(r.devTotalSale,0)} sq.ft.</span>
       </div>
       <div class="compare-metric"><span class="label">Total Revenue</span><span class="val">${fmt(r.totalRevenue)}</span></div>
       <div class="compare-metric"><span class="label">Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
