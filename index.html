@@ -710,11 +710,46 @@ function mapLocate(){
   if(!map || !navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(p=>map.setView([p.coords.latitude, p.coords.longitude], 18));
 }
-function mapSearchGo(){
+async function mapSearchGo(){
   const q = s('mapSearch'); if(!q || !map) return;
-  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q))
-    .then(r=>r.json()).then(res=>{ if(res && res[0]) map.setView([parseFloat(res[0].lat), parseFloat(res[0].lon)], 17); else alert('Location not found.'); })
-    .catch(()=>alert('Search unavailable — pan/zoom manually.'));
+  const c = map.getCenter();
+
+  // Provider 1: Photon (komoot) — fuzzy matching + location bias, best for Indian village/locality names
+  async function tryPhoton(query){
+    try{
+      const r = await fetch('https://photon.komoot.io/api/?limit=5&lat='+c.lat+'&lon='+c.lng+'&q='+encodeURIComponent(query));
+      const j = await r.json();
+      if(j && j.features && j.features.length){
+        // prefer a result in India if present
+        const inIndia = j.features.find(f => (f.properties && (f.properties.country==='India' || f.properties.countrycode==='IN')));
+        const f = inIndia || j.features[0];
+        return { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], name: (f.properties && (f.properties.name || f.properties.city)) || query };
+      }
+    }catch(e){}
+    return null;
+  }
+
+  // Provider 2: Nominatim (OSM) — restricted to India, up to 5 results
+  async function tryNominatim(query){
+    try{
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q='+encodeURIComponent(query));
+      const j = await r.json();
+      if(j && j.length) return { lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon), name: j[0].display_name ? j[0].display_name.split(',')[0] : query };
+    }catch(e){}
+    return null;
+  }
+
+  let hit = await tryPhoton(q);
+  if(!hit) hit = await tryNominatim(q);
+  if(!hit && !/india/i.test(q)) hit = await tryNominatim(q + ', Maharashtra, India');
+  if(!hit && !/pune|pimpri|chinchwad/i.test(q)) hit = await tryPhoton(q + ' Pune');
+
+  if(hit){
+    map.setView([hit.lat, hit.lon], 17);
+    L.popup({closeOnClick:true, autoClose:true}).setLatLng([hit.lat, hit.lon]).setContent('<b>'+hit.name+'</b>').openOn(map);
+  } else {
+    alert('Location not found. Tip: add the taluka or city, e.g. "Dudulgaon, Alandi Road" or "Moshi, Pimpri-Chinchwad" — or pan/zoom the map manually and pin the plot.');
+  }
 }
 
 function onAuthorityChange(){
