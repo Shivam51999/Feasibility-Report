@@ -178,7 +178,7 @@
 
 <header class="app-header">
   <div class="app-header-brand">
-    <h1><b>Mangalam</b> Plot Feasibility Studio<span class="sub">UDCPR 2020 · PMC / PCMC Sanction Norms · TOD · IGBC</span></h1>
+    <h1><b>Mangalam</b> Plot Feasibility Studio<span class="sub">UDCPR 2020 · Greenfield / Redevelopment / JV · Residential + Commercial · TOD · IGBC</span></h1>
   </div>
   <div class="hdr-actions no-print">
     <button class="hdr-btn" onclick="exportProject()">⭳ Export Project</button>
@@ -226,8 +226,17 @@
 
       <div class="field-row">
         <div class="field"><label>Zone / Area Type</label><select id="congested" onchange="recalc()"><option value="non" selected>Non-Congested (Residential)</option><option value="cong">Congested / Gaothan (Core)</option></select></div>
-        <div class="field"><label>Proposed Use</label><select id="useType" onchange="recalc()"><option value="resi" selected>Residential</option><option value="comm">Commercial / Mixed</option></select></div>
+        <div class="field"><label>Proposed Use</label><select id="useType" onchange="onUseTypeChange()"><option value="resi" selected>Residential</option><option value="comm">Commercial / Mixed</option></select></div>
       </div>
+      <div class="field-row">
+        <div class="field is-blue"><label>Project Type<span class="tag">VAR</span></label><select id="projType" onchange="onProjTypeChange()">
+          <option value="greenfield" selected>Greenfield — Outright Purchase</option>
+          <option value="redev">Redevelopment — Society</option>
+          <option value="jv">Joint Development (JV) — Area Share</option>
+        </select></div>
+        <div class="field is-blue"><label>Commercial share of saleable (%)<span class="tag">VAR</span></label><input type="number" id="commSharePct" value="0" min="0" max="100" step="1" oninput="recalc()"></div>
+      </div>
+      <div class="field-hint" style="margin:-4px 0 10px">Project Type drives the Deal Structure inputs in Step 7 and the Reverse Deal Calculator. Commercial share splits saleable between residential &amp; commercial sale rates and the challan's DC heads.</div>
 
       <div class="block-title">Deductions from Plot</div>
       <div class="field-row">
@@ -493,17 +502,37 @@
         <div class="field is-blue"><label>MHADA Rate (₹/sq.ft.)</label><input type="number" id="mhadaRate" value="3150" oninput="recalc()"></div>
       </div>
 
-      <div class="block-title">Landowner & Hand-over</div>
-      <div class="field"><label>Landowner Residential Area (sq.ft.)</label><input type="number" id="loArea" value="0" oninput="recalc()"></div>
+      <div class="block-title">Deal Structure — <span id="dealTitle">Greenfield</span></div>
       <div class="field-row">
+        <div class="field is-blue"><label>Landowner / Rehab Area (sq.ft.)<span class="tag">VAR</span></label><input type="number" id="loArea" value="0" oninput="recalc()"></div>
         <div class="field"><label>MHADA BUA hand-over (sq.ft.)</label><input type="number" id="mhadaHandover" value="0" oninput="recalc()"></div>
-        <div class="field"><label>Commercial Sale Area (sq.ft.)</label><input type="number" id="commArea" value="0" oninput="recalc()"></div>
       </div>
+      <div class="field-hint" style="margin:-4px 0 10px">Saleable area handed over free of cost to the landowner / society. The Reverse Deal Calculator (right panel) computes the maximum you can offer while the project stays GO.</div>
+      <div class="field"><label>Commercial Sale Area (sq.ft.)<span class="tag auto">AUTO</span></label><input type="number" id="commArea" disabled><div class="field-hint">Saleable × Commercial share % (Step 1) — sold at the Commercial Rate.</div></div>
 
-      <div class="block-title">Land Cost & Deposits</div>
-      <div class="field-row">
-        <div class="field is-blue"><label>Land Purchase (₹)<span class="tag">VAR</span></label><input type="number" id="landPurchase" value="120000000" oninput="recalc()"></div>
-        <div class="field"><label>Land Deposit (₹)</label><input type="number" id="landDeposit" value="0" oninput="recalc()"></div>
+      <div id="dealGreenfield">
+        <div class="field-row">
+          <div class="field is-blue"><label>Land Purchase (₹)<span class="tag">VAR</span></label><input type="number" id="landPurchase" value="120000000" oninput="recalc()"></div>
+          <div class="field"><label>Land Deposit (₹)</label><input type="number" id="landDeposit" value="0" oninput="recalc()"></div>
+        </div>
+      </div>
+      <div id="dealRedev" style="display:none">
+        <div class="field-row">
+          <div class="field is-blue"><label>Corpus to members (₹/sq.ft. of rehab)</label><input type="number" id="corpusRate" value="0" oninput="recalc()"></div>
+          <div class="field is-blue"><label>Rent + Shifting (₹ total)</label><input type="number" id="rentShift" value="0" oninput="recalc()"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Society premium / top-up (₹)</label><input type="number" id="redevPremium" value="0" oninput="recalc()"></div>
+          <div class="field"><label>DA stamp duty &amp; misc (₹)</label><input type="number" id="daStamp" value="0" oninput="recalc()"></div>
+        </div>
+        <div class="field-hint" style="margin:-4px 0 10px">No land purchase in redevelopment — the land cost is the rehab area itself + corpus + rent &amp; shifting. Corpus scales with the rehab area, so it is included in the reverse calculation.</div>
+      </div>
+      <div id="dealJv" style="display:none">
+        <div class="field-row">
+          <div class="field"><label>Landowner share basis</label><select id="jvMode" onchange="recalc()"><option value="area" selected>Fixed area (sq.ft. above)</option><option value="pct">% of total saleable</option></select></div>
+          <div class="field is-blue"><label>Landowner share (%)</label><input type="number" id="jvSharePct" value="0" min="0" max="100" step="0.5" oninput="recalc()"></div>
+        </div>
+        <div class="field"><label>Upfront consideration / non-refundable deposit (₹)</label><input type="number" id="jvUpfront" value="0" oninput="recalc()"></div>
       </div>
 
       <div class="block-title">Cost Rates (₹/sq.ft. of Total Saleable)</div>
@@ -538,6 +567,13 @@
           <div class="field"><label>PAT margin ≥ (%)</label><input type="number" id="thPat" value="10" oninput="recalc()"></div>
           <div class="field"><label>Profit ≥ ₹/sq.ft.</label><input type="number" id="thPpsf" value="500" oninput="recalc()"></div>
         </div>
+        <div class="field-hint">Editable per project type — e.g. societies often justify a lower ROI bar than greenfield land-locked equity.</div>
+      </div>
+
+      <div class="block-title constants">Reverse Deal Calculator</div>
+      <div class="constants-box">
+        <div class="field"><label>Safety margin on max offer (%)</label><input type="number" id="revMargin" value="5" min="0" max="50" step="1" oninput="recalc()"></div>
+        <div class="field-hint">Recommended offer = maximum feasible landowner / rehab area × (100 − margin)%. Full working in the right panel.</div>
       </div>
 
       <div class="step-nav"><button class="nav-btn ghost" onclick="goStep(6)">← Back</button><button class="nav-btn" onclick="window.print()">Print Full Report</button></div>
@@ -760,7 +796,7 @@ function onAuthorityChange(){
 function manualFsi(){ document.getElementById('autoFsi').checked = false; recalc(); }
 </script>
 <script>
-function computeAll(){
+function computeAll(loOverride){
   /* ---------- STEP 1: PLOT ---------- */
   const a712 = v('area712'), aMeas = v('areaMeas');
   const gross = (a712>0 && aMeas>0) ? Math.min(a712, aMeas) : Math.max(a712, aMeas);
@@ -897,9 +933,10 @@ function computeAll(){
 
   /* ---------- STEP 5: CHALLAN ---------- */
   const rrRate = v('rrRate');
+  const commFsiShare = Math.min(1, Math.max(0, v('commSharePct')/100));
   const dcPlot = gross * rrRate * v('dcPlotPct')/100;
-  const dcResi = buildable * rrRate * v('dcResiPct')/100;
-  const dcComm = 0;
+  const dcResi = buildable * (1 - commFsiShare) * rrRate * v('dcResiPct')/100;
+  const dcComm = buildable * commFsiShare * rrRate * v('dcCommPct')/100;
   const devCharges = dcPlot + dcResi + dcComm;
   const compPlot = gross * rrRate * v('compPlotPct')/100;
   const compAnc = ancillaryArea * rrRate * v('compAncPct')/100;
@@ -921,18 +958,32 @@ function computeAll(){
   const tdrTotalExpense = tdrArea > 0 ? tdrPurchase + v('tdrLoading') : 0;
 
   /* ---------- STEP 7: FEASIBILITY ---------- */
-  const loArea = v('loArea'), mhadaHandover = v('mhadaHandover'), commAreaSale = v('commArea');
-  const netSaleToDeveloper = saleableArea - loArea - mhadaHandover;
+  const projType = s('projType') || 'greenfield';
+  const mhadaHandover = v('mhadaHandover');
+  const commAreaSale = saleableArea * commFsiShare;
+  const commEl = document.getElementById('commArea'); if(commEl) commEl.value = commAreaSale.toFixed(0);
+  let loArea;
+  if(projType==='jv' && s('jvMode')==='pct') loArea = saleableArea * v('jvSharePct')/100;
+  else loArea = v('loArea');
+  if(typeof loOverride === 'number') loArea = loOverride;
+  const netSaleToDeveloper = Math.max(0, saleableArea - loArea - mhadaHandover - commAreaSale);
   const revResi = netSaleToDeveloper * v('resiRate');
   const revMhada = mhadaHandover * v('mhadaRate');
   const revComm = commAreaSale * v('commRate');
   const totalSaleRevenue = revResi + revMhada + revComm;
 
-  const landPurchase = v('landPurchase'), landDeposit = v('landDeposit');
+  const corpusAmt      = projType==='redev' ? loArea * v('corpusRate') : 0;
+  const rentShiftAmt   = projType==='redev' ? v('rentShift') : 0;
+  const daStampAmt     = projType==='redev' ? v('daStamp') : 0;
+  const redevPremiumAmt= projType==='redev' ? v('redevPremium') : 0;
+  const jvUpfrontAmt   = projType==='jv' ? v('jvUpfront') : 0;
+  const landPurchase = projType==='greenfield' ? v('landPurchase') : 0;
+  const landDeposit  = projType==='greenfield' ? v('landDeposit') : 0;
+  const landSideCost = landPurchase + landDeposit + redevPremiumAmt + corpusAmt + rentShiftAmt + daStampAmt + jvUpfrontAmt;
   const legalAmt = v('legalRate')*saleableArea, finAmt = v('finRate')*saleableArea, salesMktAmt = v('salesMktRate')*saleableArea;
   const hrAmt = v('hrRate')*saleableArea, assetsAmt = v('assetsRate')*saleableArea, consultAmt = v('consultRate')*saleableArea;
   const siteAmt = v('siteRate')*saleableArea, constructionAmt = v('constructionRate')*saleableArea;
-  const totalExpenses = landPurchase + tdrTotalExpense + landDeposit + legalAmt + grandTotalChallan + finAmt + salesMktAmt + hrAmt + assetsAmt + consultAmt + siteAmt + constructionAmt;
+  const totalExpenses = landSideCost + tdrTotalExpense + legalAmt + grandTotalChallan + finAmt + salesMktAmt + hrAmt + assetsAmt + consultAmt + siteAmt + constructionAmt;
 
   const grossProfit = totalSaleRevenue - totalExpenses;
   const taxAmt = grossProfit > 0 ? grossProfit * v('taxRate')/100 : 0;
@@ -955,9 +1006,10 @@ function computeAll(){
     isSpecial, staircases, refugeFloors, refugeAreaPerFloor, totalRefugeArea, frontSetback, sideSetback, rearSetback, distBetween, fireTender,
     conv, plateCarpet, refugeFloorCarpet, salesFloors, unitsPerFloor, allocPerFloor, remainingCarpetPerFloor, refugeFloorUnits,
     unitsPerBldg, carpetPerBldg, totalUnits, totalCarpet, unitTotals, todUnitShare, todUnitOk,
-    saleableArea, rrRate, dcPlot, dcResi, devCharges, compPlot, compAnc, compPrem, compTotal, upkar, fireChallan, grandTotalChallan,
+    saleableArea, rrRate, commFsiShare, dcPlot, dcResi, dcComm, devCharges, compPlot, compAnc, compPrem, compTotal, upkar, fireChallan, grandTotalChallan,
     slumArea, regArea, slumCost, regCost, tdrSub, tdrStamp, tdrPurchase, tdrTotalExpense,
-    loArea, mhadaHandover, commAreaSale, netSaleToDeveloper, revResi, revMhada, revComm, totalSaleRevenue,
+    projType, loArea, mhadaHandover, commAreaSale, netSaleToDeveloper, revResi, revMhada, revComm, totalSaleRevenue,
+    landSideCost, corpusAmt, rentShiftAmt, daStampAmt, redevPremiumAmt, jvUpfrontAmt,
     landPurchase, landDeposit, legalAmt, finAmt, salesMktAmt, hrAmt, assetsAmt, consultAmt, siteAmt, constructionAmt, totalExpenses,
     grossProfit, taxAmt, pat, patMargin, grossMargin, patPerYear, roi, equity, dur, ppsf
   };
@@ -1117,7 +1169,8 @@ function render5(r){
     <div class="result-section-title">अ. विकास शुल्क — Development Charges</div>
     <table>
       <tr><td>Plot <span class="formula">${fmtNum(r.gross)} m² × RR × ${v('dcPlotPct')}%</span></td><td class="num">${fmt(r.dcPlot)}</td></tr>
-      <tr><td>Residential FSI <span class="formula">${fmtNum(r.buildable)} m² × RR × ${v('dcResiPct')}%</span></td><td class="num">${fmt(r.dcResi)}</td></tr>
+      <tr><td>Residential FSI <span class="formula">${fmtNum(r.buildable*(1-r.commFsiShare))} m² × RR × ${v('dcResiPct')}%</span></td><td class="num">${fmt(r.dcResi)}</td></tr>
+      ${r.commFsiShare>0?`<tr><td>Commercial FSI <span class="formula">${fmtNum(r.buildable*r.commFsiShare)} m² × RR × ${v('dcCommPct')}%</span></td><td class="num">${fmt(r.dcComm)}</td></tr>`:''}
       <tr class="sub-total"><td>Total Development Charges</td><td class="num">${fmt(r.devCharges)}</td></tr>
     </table>
   </div>
@@ -1173,7 +1226,7 @@ function render7(r){
 
   document.getElementById('output-7').innerHTML = `
   <div class="output-title">Feasibility Report — ${s('projName')||'Project'}</div>
-  <div class="output-subtitle">${s('authority')} · Net plot ${m2(r.netPlot)} · ${r.effFsi.toFixed(2)} FSI · ${fmtNum(r.totalUnits)} units · ${sqft(r.saleableArea)} saleable</div>
+  <div class="output-subtitle">${s('authority')} · ${{greenfield:'Greenfield (Outright Purchase)',redev:'Redevelopment (Society)',jv:'Joint Development (Area Share)'}[r.projType]} · Net plot ${m2(r.netPlot)} · ${r.effFsi.toFixed(2)} FSI · ${fmtNum(r.totalUnits)} units · ${sqft(r.saleableArea)} saleable</div>
   <div class="verdict ${verdictClass}">${verdictText}</div>
   <div class="kpi-row">
     <div class="kpi-card ${critRoi?'good':'bad'}"><div class="kpi-value">${pctStr(r.roi)}</div><div class="kpi-label">ROI p.a. on Equity</div><div class="kpi-sub">Threshold ≥ ${v('thRoi')}%</div></div>
@@ -1185,8 +1238,9 @@ function render7(r){
     <div class="result-section-title">Revenue</div>
     <table>
       <tr><td>Total Saleable Area</td><td class="num">${sqft(r.saleableArea)}</td></tr>
-      <tr class="indent"><td>Less: Landowner area</td><td class="num">− ${sqft(r.loArea)}</td></tr>
+      <tr class="indent"><td>Less: Landowner / Rehab area ${r.projType==='jv'&&s('jvMode')==='pct'?`(${v('jvSharePct')}% share)`:''}</td><td class="num">− ${sqft(r.loArea)}</td></tr>
       <tr class="indent"><td>Less: MHADA hand-over</td><td class="num">− ${sqft(r.mhadaHandover)}</td></tr>
+      <tr class="indent"><td>Less: Commercial area (sold at comm. rate)</td><td class="num">− ${sqft(r.commAreaSale)}</td></tr>
       <tr class="sub-total"><td>Net Sale to Developer</td><td class="num">${sqft(r.netSaleToDeveloper)}</td></tr>
       <tr><td>Residential revenue @ ₹${fmtNum(v('resiRate'))}</td><td class="num">${fmt(r.revResi)}</td></tr>
       <tr><td>MHADA revenue @ ₹${fmtNum(v('mhadaRate'))}</td><td class="num">${fmt(r.revMhada)}</td></tr>
@@ -1197,7 +1251,10 @@ function render7(r){
   <div class="result-section">
     <div class="result-section-title">Expenses</div>
     <table>
-      <tr><td>Land Purchase + Deposit</td><td class="num">${fmt(r.landPurchase + r.landDeposit)}</td></tr>
+      ${r.projType==='greenfield'?`<tr><td>Land Purchase + Deposit</td><td class="num">${fmt(r.landPurchase + r.landDeposit)}</td></tr>`:''}
+      ${r.projType==='redev'?`<tr><td>Corpus to members <span class="formula">${sqft(r.loArea)} × ₹${fmtNum(v('corpusRate'))}</span></td><td class="num">${fmt(r.corpusAmt)}</td></tr>
+      <tr><td>Rent &amp; Shifting + Society Premium + DA Stamp</td><td class="num">${fmt(r.rentShiftAmt + r.redevPremiumAmt + r.daStampAmt)}</td></tr>`:''}
+      ${r.projType==='jv'?`<tr><td>Upfront consideration to landowner</td><td class="num">${fmt(r.jvUpfrontAmt)}</td></tr>`:''}
       <tr><td>Construction @ ₹${fmtNum(v('constructionRate'))}/sq.ft.</td><td class="num">${fmt(r.constructionAmt)}</td></tr>
       <tr><td>Sanction Challan (Step 5)</td><td class="num">${fmt(r.grandTotalChallan)}</td></tr>
       <tr><td>TDR Purchase (Step 6)</td><td class="num">${fmt(r.tdrTotalExpense)}</td></tr>
@@ -1214,7 +1271,92 @@ function render7(r){
       <tr class="total-row"><td>Profit After Tax</td><td class="num">${fmt(r.pat)}</td></tr>
     </table>
   </div>
+  ${renderReverse(r)}
   <div class="note-box"><b>Disclaimer:</b> UDCPR factors, TOD matrix and IGBC incentives here follow the published regulations, but final sanction figures depend on DP remarks, zone certificate, city-specific provisions and current circulars — always validate with the liaison architect before a land commitment.</div>`;
+}
+
+/* ================= REVERSE DEAL CALCULATOR ================= */
+function critState(r){
+  return { roi: r.roi >= v('thRoi'), pat: r.patMargin*100 >= v('thPat'), ppsf: r.ppsf >= v('thPpsf') };
+}
+function maxLFor(pred, hiCap){
+  // Largest landowner area L in [0, hiCap] for which pred(critState) holds.
+  // All three criteria are monotone non-increasing in L, so binary search is valid.
+  if(!pred(critState(computeAll(0)))) return -1;
+  if(pred(critState(computeAll(hiCap)))) return hiCap;
+  let lo = 0, hi = hiCap;
+  for(let i=0;i<32;i++){ const mid=(lo+hi)/2; if(pred(critState(computeAll(mid)))) lo=mid; else hi=mid; }
+  return lo;
+}
+function reverseDeal(){
+  const base = computeAll(0);
+  const hiCap = Math.max(0, base.saleableArea - base.mhadaHandover - base.commAreaSale);
+  return {
+    base, hiCap,
+    maxAll : maxLFor(e=>e.roi && e.pat && e.ppsf, hiCap),
+    maxRoi : maxLFor(e=>e.roi,  hiCap),
+    maxPat : maxLFor(e=>e.pat,  hiCap),
+    maxPpsf: maxLFor(e=>e.ppsf, hiCap)
+  };
+}
+function applyReverseOffer(){
+  const val = window._revReco;
+  if(!(val >= 0)) return;
+  if(s('projType')==='jv' && s('jvMode')==='pct'){
+    const S = computeAll(0).saleableArea;
+    document.getElementById('jvSharePct').value = S>0 ? (val/S*100).toFixed(2) : 0;
+  } else {
+    document.getElementById('loArea').value = Math.floor(val);
+  }
+  recalc();
+}
+function renderReverse(r){
+  const rd = reverseDeal();
+  const S = rd.base.saleableArea;
+  const title = `<div class="result-section"><div class="result-section-title">Reverse Deal Calculator — Maximum Landowner / Rehab Offer</div>`;
+  if(S <= 0) return title + `<div class="note-box">Complete Steps 1–4 first — no saleable area computed yet.</div></div>`;
+  if(rd.maxAll < 0){
+    return title + `<div class="rule-box" style="border-color:var(--red)"><b>Project is NO-GO even at a zero landowner offer.</b> The deal cannot be rescued by negotiating area share alone — revisit sale rate, construction cost, FSI mix or land-side costs before making any offer.</div></div>`;
+  }
+  const margin = Math.min(50, Math.max(0, v('revMargin')))/100;
+  const reco = rd.maxAll * (1 - margin);
+  window._revReco = reco;
+  const sharePct = x => S>0 ? (x/S*100).toFixed(1)+'%' : '—';
+  const mins = [ {k:'ROI', v:rd.maxRoi}, {k:'PAT Margin', v:rd.maxPat}, {k:'Profit/sq.ft.', v:rd.maxPpsf} ];
+  const binding = mins.reduce((a,b)=> b.v < a.v ? b : a);
+  const cur = r.loArea;
+  const curOk = cur <= rd.maxAll;
+  const critRow = (name, cap, isBind) => `<tr><td>${name} ${isBind?'<span class="chip fail">BINDING</span>':''}</td><td class="num">${cap>=rd.hiCap?'&gt; '+sqft(rd.hiCap)+' (never binds)':sqft(cap)}</td><td class="num">${cap>=rd.hiCap?'—':sharePct(cap)}</td></tr>`;
+  return title + `
+    <div class="kpi-row three">
+      <div class="kpi-card gold"><div class="kpi-value">${sqft(rd.maxAll)}</div><div class="kpi-label">Maximum Feasible Offer</div><div class="kpi-sub">${sharePct(rd.maxAll)} of saleable — all 3 criteria at threshold</div></div>
+      <div class="kpi-card good"><div class="kpi-value">${sqft(reco)}</div><div class="kpi-label">Recommended Offer</div><div class="kpi-sub">max − ${v('revMargin')}% safety margin · ${sharePct(reco)} of saleable</div></div>
+      <div class="kpi-card ${curOk?'good':'bad'}"><div class="kpi-value">${sqft(cur)}</div><div class="kpi-label">Current Offer</div><div class="kpi-sub">${curOk?'within feasible band':'EXCEEDS maximum — project turns NO-GO'}</div></div>
+    </div>
+    <table>
+      <tr><th>Criterion</th><th class="num">Max offer before it fails</th><th class="num">% of saleable</th></tr>
+      ${critRow('ROI ≥ '+v('thRoi')+'%', rd.maxRoi, binding.k==='ROI')}
+      ${critRow('PAT Margin ≥ '+v('thPat')+'%', rd.maxPat, binding.k==='PAT Margin')}
+      ${critRow('Profit ≥ ₹'+v('thPpsf')+'/sq.ft.', rd.maxPpsf, binding.k==='Profit/sq.ft.')}
+      <tr class="total-row"><td>Governing maximum (all three GO)</td><td class="num">${sqft(rd.maxAll)}</td><td class="num">${sharePct(rd.maxAll)}</td></tr>
+    </table>
+    <div class="note-box" style="margin-top:10px"><b>Reading:</b> <b>${binding.k}</b> is the binding criterion — it is the first to fail as the offer grows. ${r.projType==='redev'?'Corpus (₹/sq.ft. of rehab) scales with the offer and is included in this solve.':''} ${r.projType==='jv'&&s('jvMode')==='pct'?'Applying the offer will set the landowner share %.':''} Negotiation headroom above the recommended offer: <b>${sqft(Math.max(0, rd.maxAll - reco))}</b>.
+    <div style="margin-top:8px"><button class="nav-btn no-print" onclick="applyReverseOffer()">Apply Recommended Offer → Landowner Area</button></div></div>
+  </div>`;
+}
+
+function onProjTypeChange(){
+  const t = s('projType') || 'greenfield';
+  const el = id => document.getElementById(id);
+  if(el('dealGreenfield')) el('dealGreenfield').style.display = t==='greenfield'?'block':'none';
+  if(el('dealRedev')) el('dealRedev').style.display = t==='redev'?'block':'none';
+  if(el('dealJv')) el('dealJv').style.display = t==='jv'?'block':'none';
+  if(el('dealTitle')) el('dealTitle').textContent = t==='greenfield'?'Greenfield (Outright Purchase)':(t==='redev'?'Redevelopment (Society)':'Joint Development (Area Share)');
+  recalc();
+}
+function onUseTypeChange(){
+  if(s('useType')==='comm' && v('commSharePct')===0) document.getElementById('commSharePct').value = 100;
+  recalc();
 }
 
 function recalc(){
@@ -1251,7 +1393,7 @@ function importProject(ev){
         const el = document.getElementById(id); if(!el) return;
         if(el.type==='checkbox') el.checked = !!val; else el.value = val;
       });
-      recalc();
+      onProjTypeChange();
     } catch(e){ alert('Could not read project file.'); }
   };
   rd.readAsText(f);
@@ -1263,6 +1405,7 @@ renderRoads();
 renderUnits();
 initMap();
 onAuthorityChange();
+onProjTypeChange();
 </script>
 </body>
 </html>
